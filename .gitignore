@@ -1,10 +1,16 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+*.pyc
+.venv/
+venv/
 
-# Virtual environments
+# Project data (generated at runtime, shouldn't be committed)
+dataset/*.jpg
+encodings/*.pkl
+attendance/*.db
+
+# Keep the empty folders tracked
+!dataset/.gitkeep
+!encodings/.gitkeep
+!attendance/.gitkeep
 

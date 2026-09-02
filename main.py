@@ -1,8 +1,25 @@
-from my_face_recognition import create_encodings
+"""
+main.py
+
+Entry point for the whole application. Running this file:
+1. Makes sure the dataset/, encodings/, and attendance/ folders exist
+2. Initializes the attendance database (creates the table if needed)
+3. Launches the GUI
+
+Usage:
+    python main.py
+"""
+
+import attendance
+import my_face_recognition as fr
+from gui import launch_gui
 
 
-print("Creating face encodings...")
+def main():
+    fr.ensure_dirs()
+    attendance.init_db()
+    launch_gui()
 
-create_encodings()
 
-print("All face encodings have been created.")
+if __name__ == "__main__":
+    main()
