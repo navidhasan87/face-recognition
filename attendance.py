@@ -55,12 +55,14 @@ def mark_attendance(name):
     Insert an attendance row for `name` with today's date/time.
 
     If they're already marked present today, the UNIQUE(name, date)
-    constraint makes the INSERT fail with sqlite3.IntegrityError, which we
-    simply treat as "nothing to do" rather than an error.
+    constraint makes the INSERT a no-op.
 
     Returns True if a brand-new record was inserted, False if they were
     already marked present today.
     """
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Attendance name must be a non-empty string.")
+
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
@@ -69,13 +71,14 @@ def mark_attendance(name):
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
-            (name, today_str, time_str),
+            """
+            INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)
+            ON CONFLICT(name, date) DO NOTHING
+            """,
+            (name.strip(), today_str, time_str),
         )
         conn.commit()
-        marked_new = True
-    except sqlite3.IntegrityError:
-        marked_new = False
+        marked_new = cursor.rowcount == 1
     finally:
         conn.close()
 

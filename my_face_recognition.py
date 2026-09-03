@@ -13,6 +13,7 @@ space (small "distance" between them); different people will be far apart.
 """
 
 import pickle
+import re
 from pathlib import Path
 
 import face_recognition
@@ -39,6 +40,16 @@ def ensure_dirs():
     ENCODINGS_DIR.mkdir(exist_ok=True)
 
 
+def normalize_student_name(raw_name):
+    """Return a safe filename stem for a student name, or None if invalid."""
+    if not isinstance(raw_name, str):
+        return None
+    name = re.sub(r"\s+", "_", raw_name.strip().lower())
+    if not name or not re.fullmatch(r"[a-z0-9_-]+", name):
+        return None
+    return name
+
+
 def encode_face_from_image(image_path):
     """
     Given the path to a photo that should contain exactly one face,
@@ -56,7 +67,7 @@ def encode_face_from_image(image_path):
     # We already know exactly where the one face is, so we pass that
     # location in instead of letting face_encodings() search again.
     encodings = face_recognition.face_encodings(image, known_face_locations=face_locations)
-    return encodings[0]
+    return encodings[0] if encodings else None
 
 
 def save_encoding(name, encoding):
@@ -104,7 +115,7 @@ def load_known_encodings():
     known_names = []
     known_encodings = []
 
-    for pkl_file in ENCODINGS_DIR.glob("*.pkl"):
+    for pkl_file in sorted(ENCODINGS_DIR.glob("*.pkl")):
         name = pkl_file.stem  # filename without the ".pkl" extension
         with open(pkl_file, "rb") as f:
             encoding = pickle.load(f)
