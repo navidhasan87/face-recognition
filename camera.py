@@ -17,6 +17,11 @@ import cv2
 
 import my_face_recognition as fr
 
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+PROCESS_SCALE = 0.25
+PROCESS_EVERY_N_FRAMES = 2
+
 
 def draw_face_box(frame, name, box):
     """
@@ -61,8 +66,17 @@ def run_live_recognition(on_recognized=None, window_name="Attendance - press Q t
         print("[camera] Could not open webcam.")
         return
 
+    # Keep the capture queue short so recognition works on the newest frame,
+    # rather than falling behind and displaying stale video.
+    video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
+    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
+
     print("[camera] Webcam started. Press 'q' to quit.")
 
+    frame_number = 0
+    recognized_faces = []
+    names_to_report = []
     try:
         while True:
             ok, frame = video_capture.read()
@@ -70,12 +84,34 @@ def run_live_recognition(on_recognized=None, window_name="Attendance - press Q t
                 print("[camera] Failed to read frame from webcam.")
                 break
 
-            recognized_faces = fr.recognize_faces(frame, known_names, known_encodings)
+            frame_number += 1
+            if frame_number % PROCESS_EVERY_N_FRAMES == 0:
+                small_frame = cv2.resize(
+                    frame, None, fx=PROCESS_SCALE, fy=PROCESS_SCALE,
+                    interpolation=cv2.INTER_LINEAR,
+                )
+                small_faces = fr.recognize_faces(
+                    small_frame, known_names, known_encodings
+                )
+                # Convert detections from the small frame back to display
+                # coordinates before drawing them on the full-size frame.
+                recognized_faces = [
+                    (
+                        name,
+                        tuple(round(coordinate / PROCESS_SCALE) for coordinate in box),
+                    )
+                    for name, box in small_faces
+                ]
+                names_to_report = [
+                    name for name, _ in recognized_faces if name != "Not recognized"
+                ]
+
+                for name in names_to_report:
+                    if on_recognized is not None:
+                        on_recognized(name)
 
             for name, box in recognized_faces:
                 draw_face_box(frame, name, box)
-                if name != "Not recognized" and on_recognized is not None:
-                    on_recognized(name)
 
             cv2.imshow(window_name, frame)
 
@@ -112,8 +148,9 @@ def capture_single_photo(save_path, window_name="Press SPACE to capture, ESC to 
             key = cv2.waitKey(1) & 0xFF
 
             if key == 32:  # SPACE key
-                cv2.imwrite(str(save_path), frame)
-                saved = True
+                saved = bool(cv2.imwrite(str(save_path), frame))
+                if not saved:
+                    print(f"[camera] Could not save photo to {save_path}.")
                 break
             elif key == 27:  # ESC key
                 break

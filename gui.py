@@ -103,9 +103,14 @@ class AttendanceApp:
                 status_label.config(text="Please enter a name first.")
                 return
 
-            # Turn "John Doe" into a filesystem-safe "john_doe" so it works
-            # as both a filename (dataset/encodings) and a stored name.
-            safe_name = raw_name.lower().replace(" ", "_")
+            # Turn the entered name into a filesystem-safe filename stem.
+            safe_name = fr.normalize_student_name(raw_name)
+            if safe_name is None:
+                status_label.config(
+                    text="Use letters, numbers, spaces, '_' or '-'.", fg="red"
+                )
+                return
+
             photo_path = fr.DATASET_DIR / f"{safe_name}.jpg"
             fr.ensure_dirs()
 
