@@ -17,6 +17,7 @@ from pathlib import Path
 
 import face_recognition
 import numpy as np
+import cv2 
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -114,34 +115,67 @@ def load_known_encodings():
     return known_names, known_encodings
 
 
-def recognize_faces(frame, known_names, known_encodings):
+def recognize_faces(frame, known_names, known_encodings, scale=0.25):
     """
-    Given one video frame (a raw OpenCV/numpy image) plus the known
-    people's names/encodings, find every face in the frame and try to
-    recognize each one.
+    Given one video frame plus the known people's names/encodings,
+    find every face and try to recognize each one.
 
-    Returns a list of (name_or_"Not recognized", box) tuples, one per
-    face found. `box` is a (top, right, bottom, left) tuple - the same
-    format camera.py uses to draw rectangles.
+    scale=0.25 means face detection runs on a frame that is 1/4
+    the original width and height.
+
+    The returned face boxes are converted back to the original
+    frame's coordinates.
     """
-    # OpenCV reads frames in BGR color order, but face_recognition expects
-    # RGB, so we reverse the color channel order before doing any face work.
-    rgb_frame = frame[:, :, ::-1]
 
+    # Resize the frame before face detection.
+    # This makes detection significantly faster.
+    small_frame = cv2.resize(
+        frame,
+        (0, 0),
+        fx=scale,
+        fy=scale
+    )
+
+    # OpenCV uses BGR, face_recognition expects RGB.
+    rgb_frame = small_frame[:, :, ::-1]
+
+    # Detect faces on the smaller frame.
     face_locations = face_recognition.face_locations(rgb_frame)
-    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+    # Generate encodings for the detected faces.
+    face_encodings = face_recognition.face_encodings(
+        rgb_frame,
+        face_locations
+    )
 
     results = []
+
     for face_encoding, location in zip(face_encodings, face_locations):
+
         name = "Not recognized"
 
-        if known_encodings:  # nothing to compare against if nobody is enrolled
-            distances = face_recognition.face_distance(known_encodings, face_encoding)
+        if known_encodings:
+            distances = face_recognition.face_distance(
+                known_encodings,
+                face_encoding
+            )
+
             best_match_index = np.argmin(distances)
 
             if distances[best_match_index] <= MATCH_TOLERANCE:
                 name = known_names[best_match_index]
 
-        results.append((name, location))
+        # The coordinates currently belong to the small frame.
+        # Convert them back to the original frame size.
+        top, right, bottom, left = location
+
+        top = int(top / scale)
+        right = int(right / scale)
+        bottom = int(bottom / scale)
+        left = int(left / scale)
+
+        results.append(
+            (name, (top, right, bottom, left))
+        )
 
     return results

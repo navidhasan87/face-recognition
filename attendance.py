@@ -13,6 +13,10 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+# People already marked present during this application session.
+# This prevents unnecessary SQLite operations for repeated detections.
+marked_today_cache = set()
+
 BASE_DIR = Path(__file__).resolve().parent
 ATTENDANCE_DIR = BASE_DIR / "attendance"
 DB_PATH = ATTENDANCE_DIR / "attendance.db"
@@ -54,28 +58,48 @@ def mark_attendance(name):
     """
     Insert an attendance row for `name` with today's date/time.
 
-    If they're already marked present today, the UNIQUE(name, date)
-    constraint makes the INSERT fail with sqlite3.IntegrityError, which we
-    simply treat as "nothing to do" rather than an error.
+    If the person has already been marked during this application
+    session, skip the database operation completely.
 
-    Returns True if a brand-new record was inserted, False if they were
-    already marked present today.
+    The database UNIQUE(name, date) constraint is still kept as a
+    safety net in case the database already contains today's record.
+
+    Returns True if a brand-new record was inserted,
+    False otherwise.
     """
+    # Fast path:
+    # If we already marked this person during this session,
+    # there is no reason to touch SQLite again.
+    if name in marked_today_cache:
+        return False
+
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
 
     conn = _get_connection()
     cursor = conn.cursor()
+
     try:
         cursor.execute(
             "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
             (name, today_str, time_str),
         )
+
         conn.commit()
         marked_new = True
+
+        # Only add to the cache after a successful database insert.
+        marked_today_cache.add(name)
+
     except sqlite3.IntegrityError:
+        # The person may already have an attendance record from
+        # earlier in the day, before this application was started.
         marked_new = False
+
+        # Cache them so we don't query SQLite again during this session.
+        marked_today_cache.add(name)
+
     finally:
         conn.close()
 

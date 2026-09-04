@@ -44,48 +44,76 @@ def draw_face_box(frame, name, box):
     )
 
 
-def run_live_recognition(on_recognized=None, window_name="Attendance - press Q to quit"):
+def run_live_recognition(
+    on_recognized=None,
+    window_name="Attendance - press Q to quit"
+):
     """
-    Open the webcam and continuously show recognized faces until the user
-    presses 'q' or closes the window.
+    Open the webcam and continuously show recognized faces.
 
-    `on_recognized(name)` is an optional callback. If provided, it gets
-    called every time a *known* person is seen in a frame - attendance.py
-    passes attendance.mark_attendance so camera.py never has to know
-    anything about the database itself.
+    Face detection is performed only every few frames to improve
+    webcam performance. The latest recognition results are drawn
+    on the frames between detection cycles.
     """
+
     known_names, known_encodings = fr.load_known_encodings()
 
     video_capture = cv2.VideoCapture(0)
+
     if not video_capture.isOpened():
         print("[camera] Could not open webcam.")
         return
 
     print("[camera] Webcam started. Press 'q' to quit.")
 
+    # Run face detection once every N frames.
+    DETECTION_INTERVAL = 3
+
+    # Store the latest detection results.
+    recognized_faces = []
+
+    frame_count = 0
+
     try:
         while True:
             ok, frame = video_capture.read()
+
             if not ok:
                 print("[camera] Failed to read frame from webcam.")
                 break
 
-            recognized_faces = fr.recognize_faces(frame, known_names, known_encodings)
+            frame_count += 1
 
+            # Only run the expensive face recognition operation
+            # every 3rd frame.
+            if frame_count % DETECTION_INTERVAL == 0:
+                recognized_faces = fr.recognize_faces(
+                    frame,
+                    known_names,
+                    known_encodings
+                )
+
+                # Report recognized people only when a new detection
+                # is performed.
+                for name, box in recognized_faces:
+                    if (
+                        name != "Not recognized"
+                        and on_recognized is not None
+                    ):
+                        on_recognized(name)
+
+            # Draw the most recent recognition results on every frame.
             for name, box in recognized_faces:
                 draw_face_box(frame, name, box)
-                if name != "Not recognized" and on_recognized is not None:
-                    on_recognized(name)
 
+            # Display every frame normally.
             cv2.imshow(window_name, frame)
 
-            # waitKey(1) pauses 1ms and lets the window repaint each loop;
-            # it also lets us check whether 'q' was pressed.
+            # Check whether 'q' was pressed.
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
+
     finally:
-        # Always release the camera and close windows, even if something
-        # above raised an error - otherwise the webcam can stay "locked".
         video_capture.release()
         cv2.destroyAllWindows()
 
