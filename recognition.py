@@ -7,37 +7,24 @@ import numpy as np
 import face_recognition
 from PIL import Image, ImageTk
 
-
-# ============================================================
-# CONFIGURATION
-# ============================================================
+# configuration
 
 FACE_DIR = "faces"
 DATA_DIR = "data"
 ENCODINGS_FILE = os.path.join(DATA_DIR, "face_encodings.pkl")
 
-# HOG ONLY
 DETECTION_MODEL = "hog"
 
-# Recognition threshold
-#
-# Lower = stricter
-# Higher = more tolerant
-#
-# Recommended starting value:
-# 0.50
-RECOGNITION_THRESHOLD = 0.70
 
-# Number of frames used for confirmation
+# detection threshold. beshi hole loose kom hole strict. 0.50 average bola jay.
+RECOGNITION_THRESHOLD = 0.50
+
 CONFIRMATION_WINDOW = 5
 
-# Number of matching frames required
 CONFIRMATION_REQUIRED = 3
 
-# Minimum face size during recognition
 MIN_FACE_SIZE = 70
 
-# Minimum sharpness of face
 BLUR_THRESHOLD = 30.0
 
 
@@ -51,9 +38,7 @@ class FaceCamera:
         os.makedirs(FACE_DIR, exist_ok=True)
         os.makedirs(DATA_DIR, exist_ok=True)
 
-        # ----------------------------------------------------
-        # Recognition state
-        # ----------------------------------------------------
+        # recognition er kajkam
 
         self.recognition_history = deque(
             maxlen=CONFIRMATION_WINDOW
@@ -62,9 +47,7 @@ class FaceCamera:
         self.last_recognized_id = None
         self.last_confidence = 0.0
 
-    # ========================================================
-    # CAMERA
-    # ========================================================
+    # camera er kajkam
 
     def start(self):
 
@@ -80,7 +63,6 @@ class FaceCamera:
 
             self.camera.release()
             self.camera = None
-
             return False
 
         self.camera.set(
@@ -116,9 +98,7 @@ class FaceCamera:
 
         return frame
 
-    # ========================================================
-    # RESET RECOGNITION
-    # ========================================================
+    # recognition er restart
 
     def reset_confirmation(self):
 
@@ -128,18 +108,12 @@ class FaceCamera:
 
         self.last_confidence = 0.0
 
-    # ========================================================
-    # FACE DETECTION
-    # ========================================================
+    # chehara dekha
 
     def detect_faces(self, frame):
 
         if frame is None:
             return []
-
-        # ----------------------------------------------------
-        # Resize frame for faster HOG detection
-        # ----------------------------------------------------
 
         small_frame = cv2.resize(
             frame,
@@ -153,18 +127,10 @@ class FaceCamera:
             cv2.COLOR_BGR2RGB
         )
 
-        # ----------------------------------------------------
-        # HOG FACE DETECTION
-        # ----------------------------------------------------
-
         locations = face_recognition.face_locations(
             rgb_frame,
             model="hog"
         )
-
-        # ----------------------------------------------------
-        # Convert coordinates back to original resolution
-        # ----------------------------------------------------
 
         scaled_locations = []
 
@@ -185,10 +151,6 @@ class FaceCamera:
             )
 
         return scaled_locations
-
-    # ========================================================
-    # FACE QUALITY
-    # ========================================================
 
     def calculate_blur(self, face):
 
@@ -216,19 +178,11 @@ class FaceCamera:
         width = right - left
         height = bottom - top
 
-        # ----------------------------------------------------
-        # Face too small
-        # ----------------------------------------------------
-
         if width < MIN_FACE_SIZE:
             return False
 
         if height < MIN_FACE_SIZE:
             return False
-
-        # ----------------------------------------------------
-        # Clamp coordinates
-        # ----------------------------------------------------
 
         top = max(0, top)
         left = max(0, left)
@@ -251,10 +205,6 @@ class FaceCamera:
         if face.size == 0:
             return False
 
-        # ----------------------------------------------------
-        # Blur check
-        # ----------------------------------------------------
-
         blur_value = self.calculate_blur(
             face
         )
@@ -263,10 +213,6 @@ class FaceCamera:
             return False
 
         return True
-
-    # ========================================================
-    # DRAW FACE BOXES
-    # ========================================================
 
     def draw_faces(
         self,
@@ -299,9 +245,7 @@ class FaceCamera:
                 2
             )
 
-            # Label background
             label_height = 28
-
             label_top = max(
                 0,
                 bottom - label_height
@@ -327,9 +271,7 @@ class FaceCamera:
 
         return output
 
-    # ========================================================
-    # TKINTER IMAGE
-    # ========================================================
+    # tkinter er image
 
     def get_tk_image(
         self,
@@ -356,9 +298,7 @@ class FaceCamera:
             image=image
         )
 
-    # ========================================================
-    # REGISTRATION IMAGE
-    # ========================================================
+    # registration er chobi
 
     def capture_face_image(
         self,
@@ -392,34 +332,24 @@ class FaceCamera:
 
         return filename
 
-    # ========================================================
-    # ENCODE IMAGE
-    # ========================================================
+    # image encode
 
     def encode_image(
         self,
         image_path
     ):
-
         try:
-
             image = face_recognition.load_image_file(
                 image_path
             )
-
-            # HOG ONLY
             locations = face_recognition.face_locations(
                 image,
                 model="hog"
             )
-
             if not locations:
                 return None
 
-            # ------------------------------------------------
-            # If multiple faces exist, choose largest
-            # ------------------------------------------------
-
+            #face onek thakle largest face detect hobe
             largest_face = max(
                 locations,
                 key=lambda box:
@@ -435,14 +365,11 @@ class FaceCamera:
                 ],
                 num_jitters=2
             )
-
             if not encodings:
                 return None
-
             return encodings[0]
 
         except Exception as error:
-
             print(
                 f"Error encoding {image_path}:"
             )
@@ -451,24 +378,18 @@ class FaceCamera:
 
             return None
 
-    # ========================================================
-    # CREATE ENCODINGS FOR ONE STUDENT
-    # ========================================================
+    # proti student er encoding kora
 
     def create_student_encoding(
         self,
         student_id
     ):
-
         student_id = str(student_id)
-
         student_dir = os.path.join(
             FACE_DIR,
             student_id
         )
-
         if not os.path.isdir(student_dir):
-
             return False, 0
 
         image_files = []
@@ -476,7 +397,6 @@ class FaceCamera:
         for filename in os.listdir(
             student_dir
         ):
-
             if filename.lower().endswith(
                 (
                     ".jpg",
@@ -484,7 +404,6 @@ class FaceCamera:
                     ".png"
                 )
             ):
-
                 image_files.append(
                     os.path.join(
                         student_dir,
@@ -495,16 +414,12 @@ class FaceCamera:
         image_files.sort()
 
         if not image_files:
-
             return False, 0
 
-        # ----------------------------------------------------
-        # Load existing encoding dictionary
-        # ----------------------------------------------------
+        # encoding er dictionary khola
 
         all_encodings = self.load_encodings()
 
-        # Replace this student's encodings
         all_encodings[student_id] = []
 
         successful = 0
@@ -525,10 +440,7 @@ class FaceCamera:
 
                 successful += 1
 
-        # ----------------------------------------------------
-        # No valid images
-        # ----------------------------------------------------
-
+        # image payni
         if successful == 0:
 
             all_encodings.pop(
@@ -542,9 +454,7 @@ class FaceCamera:
 
             return False, 0
 
-        # ----------------------------------------------------
-        # Save
-        # ----------------------------------------------------
+        # save kora
 
         self.save_encodings(
             all_encodings
@@ -552,111 +462,84 @@ class FaceCamera:
 
         return True, successful
 
-    # ========================================================
-    # LOAD ENCODINGS
-    # ========================================================
+    # encoding load kora
 
     def load_encodings(self):
 
         if not os.path.exists(
             ENCODINGS_FILE
         ):
-
             return {}
 
         try:
-
             with open(
                 ENCODINGS_FILE,
                 "rb"
             ) as file:
-
                 data = pickle.load(
                     file
                 )
-
             if not isinstance(
                 data,
                 dict
             ):
-
                 return {}
-
             return data
 
         except Exception as error:
-
             print(
                 "Error loading encodings:"
             )
-
             print(error)
-
             return {}
 
-    # ========================================================
-    # SAVE ENCODINGS
-    # ========================================================
+    # save encoding
 
     def save_encodings(
         self,
         encodings
     ):
-
         os.makedirs(
             DATA_DIR,
             exist_ok=True
         )
-
         temp_file = (
             ENCODINGS_FILE
             + ".tmp"
         )
-
         try:
-
             with open(
                 temp_file,
                 "wb"
             ) as file:
-
                 pickle.dump(
                     encodings,
                     file,
                     protocol=pickle.HIGHEST_PROTOCOL
                 )
-
             os.replace(
                 temp_file,
                 ENCODINGS_FILE
             )
-
             return True
 
         except Exception as error:
-
             print(
                 "Error saving encodings:"
             )
-
             print(error)
-
             if os.path.exists(
                 temp_file
             ):
-
                 try:
                     os.remove(
                         temp_file
                     )
                 except OSError:
                     pass
-
             return False
 
-    # ========================================================
-    # GET KNOWN ENCODINGS
-    # ========================================================
+    # chena encoding ber kora
 
     def get_known_encodings(self):
 
@@ -667,79 +550,49 @@ class FaceCamera:
 
         for student_id, student_encodings in stored.items():
 
-            # ------------------------------------------------
-            # Compatibility with old format
-            # ------------------------------------------------
-
             if isinstance(
                 student_encodings,
                 np.ndarray
             ):
-
                 student_encodings = [
                     student_encodings
                 ]
-
             if not isinstance(
                 student_encodings,
                 list
             ):
-
                 continue
 
             for encoding in student_encodings:
-
                 try:
-
                     vector = np.asarray(
                         encoding,
                         dtype=np.float64
                     )
-
                     if vector.shape != (128,):
                         continue
-
                     student_ids.append(
                         str(student_id)
                     )
-
                     encodings.append(
                         vector
                     )
-
                 except Exception:
                     continue
-
         return (
             student_ids,
             encodings
         )
-
-    # ========================================================
-    # CONFIDENCE
-    # ========================================================
 
     def calculate_confidence(
         self,
         distance,
         threshold
     ):
-
-        # ----------------------------------------------------
-        # This is a similarity score, not a probability.
-        #
-        # 100% does NOT mean mathematically certain.
-        # ----------------------------------------------------
-
         if distance >= threshold:
-
             return 0.0
 
-        confidence = (
-            1.0
-            -
-            (distance / threshold)
-        ) * 100.0
+        confidence = (1.0-(distance / threshold))* 100.0
 
         return max(
             0.0,
@@ -749,21 +602,16 @@ class FaceCamera:
             )
         )
 
-    # ========================================================
-    # MULTI-FRAME CONFIRMATION
-    # ========================================================
+    # multiframe confirmation
 
     def confirm_identity(
         self,
         student_id
     ):
-
         self.recognition_history.append(
             str(student_id)
         )
-
         if not self.recognition_history:
-
             return None
 
         counts = Counter(
@@ -775,56 +623,37 @@ class FaceCamera:
         )
 
         if candidate == "Unknown":
-
             return None
 
         if candidate == "Poor quality":
-
             return None
 
         if count >= CONFIRMATION_REQUIRED:
-
             self.last_recognized_id = (
                 candidate
             )
-
             return candidate
-
         return None
 
-    # ========================================================
-    # RECOGNIZE FACES
-    # ========================================================
+    # face chena
 
     def recognize_faces(
         self,
         frame,
         tolerance=RECOGNITION_THRESHOLD
         ):
-
         if frame is None:
-
             return [], []
-
-        # ----------------------------------------------------
-        # Detect faces using HOG
-        # ----------------------------------------------------
 
         locations = self.detect_faces(
             frame
         )
 
         if not locations:
-
             self.recognition_history.append(
                 "Unknown"
             )
-
             return [], []
-
-        # ----------------------------------------------------
-        # Check quality
-        # ----------------------------------------------------
 
         valid_locations = []
 
@@ -834,7 +663,6 @@ class FaceCamera:
                 frame,
                 location
             ):
-
                 valid_locations.append(
                     location
                 )
@@ -853,18 +681,14 @@ class FaceCamera:
                 ]
             )
 
-        # ----------------------------------------------------
-        # Convert image
-        # ----------------------------------------------------
+        #image conversion
 
         rgb_frame = cv2.cvtColor(
             frame,
             cv2.COLOR_BGR2RGB
         )
 
-        # ----------------------------------------------------
-        # Generate live encodings
-        # ----------------------------------------------------
+        # live encoding
 
         live_encodings = (
             face_recognition.face_encodings(
@@ -875,11 +699,9 @@ class FaceCamera:
         )
 
         if not live_encodings:
-
             self.recognition_history.append(
                 "Unknown"
             )
-
             return (
                 locations,
                 [
@@ -888,17 +710,11 @@ class FaceCamera:
                 ]
             )
 
-        # ----------------------------------------------------
-        # Load registered encodings
-        # ----------------------------------------------------
-
         known_ids, known_vectors = (
             self.get_known_encodings()
         )
 
-        # No registered faces
         if not known_vectors:
-
             return (
                 locations,
                 [
@@ -911,28 +727,21 @@ class FaceCamera:
 
         live_index = 0
 
-        # ----------------------------------------------------
-        # Process each detected face
-        # ----------------------------------------------------
+        #detected face check
 
         for location in locations:
-
             if location not in valid_locations:
-
                 results.append(
                     "Poor quality"
                 )
-
                 continue
 
             if live_index >= len(
                 live_encodings
             ):
-
                 results.append(
                     "Unknown"
                 )
-
                 continue
 
             live_encoding = (
@@ -943,9 +752,7 @@ class FaceCamera:
 
             live_index += 1
 
-            # ------------------------------------------------
-            # Compare against ALL stored encodings
-            # ------------------------------------------------
+            # comparison of encodings
 
             distances = (
                 face_recognition.face_distance(
@@ -955,11 +762,9 @@ class FaceCamera:
             )
 
             if len(distances) == 0:
-
                 results.append(
                     "Unknown"
                 )
-
                 continue
 
             best_index = int(
@@ -991,12 +796,9 @@ class FaceCamera:
                 confidence
             )
 
-            # ------------------------------------------------
-            # Recognition decision
-            # ------------------------------------------------
+            # decision
 
             if best_distance <= tolerance:
-
                 confirmed_id = (
                     self.confirm_identity(
                         candidate_id
@@ -1004,19 +806,15 @@ class FaceCamera:
                 )
 
                 if confirmed_id is not None:
-
                     results.append(
                         confirmed_id
                     )
-
                 else:
-
                     results.append(
                         "Unknown"
                     )
 
             else:
-
                 self.confirm_identity(
                     "Unknown"
                 )
@@ -1030,12 +828,9 @@ class FaceCamera:
             results
         )
 
-    # ========================================================
-    # REBUILD ALL ENCODINGS
-    # ========================================================
+    # encoding rebuild
 
     def rebuild_all_encodings(self):
-
         if not os.path.isdir(
             FACE_DIR
         ):
@@ -1049,16 +844,13 @@ class FaceCamera:
         for student_id in os.listdir(
             FACE_DIR
         ):
-
             student_dir = os.path.join(
                 FACE_DIR,
                 student_id
             )
-
             if not os.path.isdir(
                 student_dir
             ):
-
                 continue
 
             image_files = []
@@ -1066,7 +858,6 @@ class FaceCamera:
             for filename in os.listdir(
                 student_dir
             ):
-
                 if filename.lower().endswith(
                     (
                         ".jpg",
@@ -1074,7 +865,6 @@ class FaceCamera:
                         ".png"
                     )
                 ):
-
                     image_files.append(
                         os.path.join(
                             student_dir,
@@ -1085,19 +875,16 @@ class FaceCamera:
             student_encodings = []
 
             for image_path in image_files:
-
                 encoding = self.encode_image(
                     image_path
                 )
 
                 if encoding is not None:
-
                     student_encodings.append(
                         encoding
                     )
 
             if student_encodings:
-
                 all_encodings[
                     str(student_id)
                 ] = student_encodings

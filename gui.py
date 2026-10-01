@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from ttkthemes import ThemedTk
 
 from recognition import FaceCamera
 
@@ -23,18 +24,9 @@ class AttendanceApp:
             "Offline Face Recognition Attendance System"
         )
 
-        self.root.geometry(
-            "1100x800"
-        )
-
-        self.root.minsize(
-            900,
-            650
-        )
-
-        # -------------------------
-        # Application State
-        # -------------------------
+        # fullscreen e korlam
+        self.root.state("zoomed")
+        self.root.minsize(1280,720)
 
         self.face_camera = FaceCamera()
 
@@ -46,15 +38,7 @@ class AttendanceApp:
 
         self.registration_student_id = None
 
-        # -------------------------
-        # Database
-        # -------------------------
-
         initialize_database()
-
-        # -------------------------
-        # GUI
-        # -------------------------
 
         self.setup_style()
 
@@ -64,33 +48,27 @@ class AttendanceApp:
             "Dashboard"
         )
 
-        # -------------------------
-        # Closing
-        # -------------------------
-
         self.root.protocol(
             "WM_DELETE_WINDOW",
             self.close_application
         )
 
-    # =====================================================
-    # STYLE
-    # =====================================================
 
+    # tstyle set kortesi
     def setup_style(self):
 
         style = ttk.Style()
 
         try:
             style.theme_use(
-                "clam"
+                "equilux" #theme ta use korlam
             )
         except tk.TclError:
             pass
 
         style.configure(
             "Title.TLabel",
-            font=("Segoe UI", 24, "bold")
+            font=("Segoe UI", 22)
         )
 
         style.configure(
@@ -101,45 +79,22 @@ class AttendanceApp:
         style.configure(
             "Menu.TButton",
             font=("Segoe UI", 11),
-            padding=10
+            padding=5
         )
 
-    # =====================================================
-    # MAIN LAYOUT
-    # =====================================================
+    # layout banailam
 
     def create_layout(self):
-
-        self.sidebar = ttk.Frame(
-            self.root,
-            width=230
-        )
-
-        self.sidebar.pack(
-            side="left",
-            fill="y"
-        )
-
-        self.sidebar.pack_propagate(
-            False
-        )
-
-        self.content = ttk.Frame(
-            self.root
-        )
+        self.content = ttk.Frame(self.root)
 
         self.content.pack(
-            side="right",
             fill="both",
             expand=True
         )
 
-        # Pages dictionary MUST exist
-        # before creating pages.
+        # shobgula page
 
         self.pages = {}
-
-        self.create_sidebar()
 
         self.create_dashboard()
 
@@ -151,75 +106,18 @@ class AttendanceApp:
 
         self.create_reports()
 
-    # =====================================================
-    # SIDEBAR
-    # =====================================================
-
-    def create_sidebar(self):
-
-        title = ttk.Label(
-            self.sidebar,
-            text="Attendance\nSystem",
-            font=("Segoe UI", 18, "bold"),
-            justify="center"
-        )
-
-        title.pack(
-            pady=30
-        )
-
-        buttons = [
-            ("Dashboard", "Dashboard"),
-            ("Register Student", "Registration"),
-            ("Registered Students", "Students"),
-            ("Start Attendance", "Attendance"),
-            ("View Reports", "Reports")
-        ]
-
-        for text, page in buttons:
-
-            button = ttk.Button(
-                self.sidebar,
-                text=text,
-                style="Menu.TButton",
-                command=lambda p=page:
-                self.show_page(p)
-            )
-
-            button.pack(
-                fill="x",
-                padx=20,
-                pady=5
-            )
-
-        exit_button = ttk.Button(
-            self.sidebar,
-            text="Exit",
-            style="Menu.TButton",
-            command=self.close_application
-        )
-
-        exit_button.pack(
-            side="bottom",
-            fill="x",
-            padx=20,
-            pady=20
-        )
-
-    # =====================================================
-    # PAGE SWITCHING
-    # =====================================================
+    # page paltanor system
 
     def show_page(self, page_name):
 
-        # Stop registration camera
+        # registration er camera bondho by default
         if (
             page_name != "Registration"
             and self.registration_running
         ):
             self.stop_camera()
 
-        # Stop attendance camera
+        # attendance er camera bondho by default
         if (
             page_name != "Attendance"
             and self.attendance_running
@@ -241,19 +139,17 @@ class AttendanceApp:
                 expand=True
             )
 
-        # Refresh students
+        # page e dhukle refresh
         if page_name == "Students":
 
             self.load_students()
 
-        # Refresh reports
+        # pgae e dhukle refresh
         if page_name == "Reports":
 
             self.load_attendance()
 
-    # =====================================================
-    # DASHBOARD
-    # =====================================================
+    # dashboard banabo
 
     def create_dashboard(self):
 
@@ -266,75 +162,70 @@ class AttendanceApp:
 
         ttk.Label(
             page,
-            text="Face Recognition Attendance System",
+            text="Offline Attendance System using Face Recognition",
             style="Title.TLabel"
         ).pack(
-            anchor="w",
-            pady=(10, 5)
+            pady=(10, 8)
         )
 
         ttk.Label(
             page,
-            text="Offline AI-powered attendance management system",
+            text="Powered by AI",
             style="Subtitle.TLabel"
         ).pack(
-            anchor="w",
-            pady=(0, 40)
+            pady=(0, 50)
         )
 
+        # 4 ta page er button banalam with dui row dui column
+        button_grid = ttk.Frame(page)
+        button_grid.pack()
+
+        buttons = [
+            ("Take Attendance", "Attendance"),
+            ("View Reports", "Reports"),
+            ("Registered Students", "Students"),
+            ("Register Student", "Registration")
+        ]
+
+        for index, (button_text, target_page) in enumerate(buttons):
+            row = index // 2
+            column = index % 2
+
+            ttk.Button(
+                button_grid,
+                text=button_text,
+                style="Menu.TButton",
+                width=20,
+                command=lambda p=target_page: self.show_page(p)
+            ).grid(
+                row=row,
+                column=column,
+                padx=5,
+                pady=5,
+                ipadx=30,
+                ipady=5
+            )
+
+        # exit button banailam
         ttk.Button(
             page,
-            text="Register New Student",
+            text="Exit",
+            width=10,
             style="Menu.TButton",
-            command=lambda:
-            self.show_page("Registration")
+            command=self.close_application
         ).pack(
-            fill="x",
-            pady=10
+            pady=(5, 5),
+            ipadx=30,
+            ipady=5
         )
 
-        ttk.Button(
-            page,
-            text="Registered Students",
-            style="Menu.TButton",
-            command=lambda:
-            self.show_page("Students")
-        ).pack(
-            fill="x",
-            pady=10
-        )
-
-        ttk.Button(
-            page,
-            text="Start Attendance",
-            style="Menu.TButton",
-            command=lambda:
-            self.show_page("Attendance")
-        ).pack(
-            fill="x",
-            pady=10
-        )
-
-        ttk.Button(
-            page,
-            text="View Reports",
-            style="Menu.TButton",
-            command=lambda:
-            self.show_page("Reports")
-        ).pack(
-            fill="x",
-            pady=10
-        )
-
-    # =====================================================
-    # REGISTRATION
-    # =====================================================
+    # registration er page banailam
 
     def create_registration(self):
 
         page = ttk.Frame(
             self.content,
-            padding=25
+            padding=30
         )
 
         self.pages["Registration"] = page
@@ -344,20 +235,18 @@ class AttendanceApp:
             text="Register Student",
             style="Title.TLabel"
         ).pack(
-            anchor="w",
+            anchor="center",
             pady=(5, 15)
         )
 
-        # -------------------------
-        # Form
-        # -------------------------
+        # form jekhane input jabe
 
         form = ttk.Frame(
             page
         )
 
         form.pack(
-            anchor="w"
+            anchor="center"
         )
 
         ttk.Label(
@@ -406,13 +295,15 @@ class AttendanceApp:
             pady=5
         )
 
-        # -------------------------
-        # Camera
-        # -------------------------
+        # camera er frame
+        camera_frame_title = ttk.Label(
+            page,
+            text="Camera Preview",
+        )
+        camera_frame_title.pack(anchor="center", pady=(10,0))
 
         camera_frame = ttk.LabelFrame(
-            page,
-            text="Camera Preview"
+            page
         )
 
         camera_frame.pack(
@@ -439,9 +330,7 @@ class AttendanceApp:
             pady=5
         )
 
-        # -------------------------
-        # Buttons
-        # -------------------------
+        # camera er button
 
         buttons = ttk.Frame(
             page
@@ -487,9 +376,17 @@ class AttendanceApp:
             padx=5
         )
 
-    # =====================================================
-    # START REGISTRATION CAMERA
-    # =====================================================
+        ttk.Button(
+            page,
+            text="Back",
+            command=lambda: self.show_page("Dashboard")
+        ).pack(
+            side="bottom",
+            padx=5,
+            pady=(0,5)
+        )
+
+    # camera chalu
 
     def start_registration_camera(self):
 
@@ -500,21 +397,17 @@ class AttendanceApp:
         )
 
         if not student_id:
-
             messagebox.showwarning(
                 "Missing Information",
                 "Enter the Student ID first."
             )
-
             return
 
         if not self.face_camera.start():
-
             messagebox.showerror(
                 "Camera Error",
                 "Could not open the webcam."
             )
-
             return
 
         self.registration_student_id = student_id
@@ -529,27 +422,21 @@ class AttendanceApp:
 
         self.update_registration_camera()
 
-    # =====================================================
-    # REGISTRATION CAMERA UPDATE
-    # =====================================================
+    # camera updates
 
     def update_registration_camera(self):
 
         if not self.registration_running:
-
             return
 
         frame = self.face_camera.read_frame()
 
         if frame is None:
-
             self.stop_camera()
-
             messagebox.showerror(
                 "Camera Error",
                 "Could not read from webcam."
             )
-
             return
 
         faces = self.face_camera.detect_faces(
@@ -579,39 +466,30 @@ class AttendanceApp:
             self.update_registration_camera
         )
 
-    # =====================================================
-    # CAPTURE FACE
-    # =====================================================
+    # chobi tulo register koro
 
     def capture_registration_face(self):
 
         if not self.registration_running:
-
             messagebox.showwarning(
                 "Camera",
                 "Start the camera first."
             )
-
             return
 
         if self.capture_count >= self.max_captures:
-
             messagebox.showinfo(
                 "Complete",
                 "Maximum number of images captured."
             )
-
             return
 
         frame = self.face_camera.read_frame()
-
         if frame is None:
-
             messagebox.showerror(
                 "Camera Error",
                 "Could not capture frame."
             )
-
             return
 
         faces = self.face_camera.detect_faces(
@@ -619,21 +497,17 @@ class AttendanceApp:
         )
 
         if len(faces) == 0:
-
             messagebox.showwarning(
                 "No Face",
                 "No face was detected."
             )
-
             return
 
         if len(faces) > 1:
-
             messagebox.showwarning(
                 "Multiple Faces",
                 "Only one face should be visible."
             )
-
             return
 
         self.capture_count += 1
@@ -669,9 +543,7 @@ class AttendanceApp:
                 "All 10 images captured."
             )
 
-    # =====================================================
-    # STOP REGISTRATION CAMERA
-    # =====================================================
+    # camera bondho
 
     def stop_camera(self):
 
@@ -686,9 +558,7 @@ class AttendanceApp:
 
         self.camera_label.image = None
 
-    # =====================================================
-    # SAVE STUDENT
-    # =====================================================
+    # student ke save koro
 
     def save_student(self):
         student_id = self.student_id_entry.get().strip()
@@ -708,7 +578,7 @@ class AttendanceApp:
             )
             return
 
-        # Add student to SQLite
+        # sqlite e student ke add korlam
         success = add_student(student_id, name)
 
         if not success:
@@ -718,8 +588,7 @@ class AttendanceApp:
             )
             return
 
-        # IMPORTANT:
-        # Create facial encodings from the captured images
+        # tola chobi diye face encoding banailam
         encoding_success, count = (
             self.face_camera.create_student_encoding(
                 student_id
@@ -732,7 +601,6 @@ class AttendanceApp:
                 "The student was added to the database, "
                 "but no valid facial encoding could be created."
             )
-
             self.stop_camera()
             return
 
@@ -761,9 +629,7 @@ class AttendanceApp:
             text="Captured: 0 / 10"
         )
 
-    # =====================================================
-    # REGISTERED STUDENTS
-    # =====================================================
+    # registered student page
 
     def create_students(self):
 
@@ -779,8 +645,8 @@ class AttendanceApp:
             text="Registered Students",
             style="Title.TLabel"
         ).pack(
-            anchor="w",
-            pady=(5, 10)
+            anchor="center",
+            pady=(10, 5)
         )
 
         ttk.Label(
@@ -788,8 +654,8 @@ class AttendanceApp:
             text="Students currently registered in the system.",
             style="Subtitle.TLabel"
         ).pack(
-            anchor="w",
-            pady=(0, 15)
+            anchor="center",
+            pady=(5, 10)
         )
 
         table_frame = ttk.Frame(
@@ -828,7 +694,8 @@ class AttendanceApp:
 
         self.students_table.column(
             "name",
-            width=400
+            width=400,
+            anchor="center"
         )
 
         scrollbar = ttk.Scrollbar(
@@ -852,38 +719,32 @@ class AttendanceApp:
             fill="y"
         )
 
-        buttons = ttk.Frame(
-            page
-        )
-
-        buttons.pack(
-            fill="x",
-            pady=15
-        )
 
         ttk.Button(
-            buttons,
+            page,
             text="Refresh",
             command=self.load_students
         ).pack(
-            side="left",
-            padx=5
+            anchor="center",
+            pady=10
         )
 
         ttk.Button(
-            buttons,
+            page,
             text="Back",
             command=lambda:
             self.show_page("Dashboard")
         ).pack(
-            side="right",
-            padx=5
+            side="bottom",
+            padx=5,
+            pady=(0,5)
         )
+        
+        
 
     def load_students(self):
 
         for item in self.students_table.get_children():
-
             self.students_table.delete(
                 item
             )
@@ -891,7 +752,6 @@ class AttendanceApp:
         students = get_students()
 
         for student_id, name in students:
-
             self.students_table.insert(
                 "",
                 "end",
@@ -901,9 +761,7 @@ class AttendanceApp:
                 )
             )
 
-    # =====================================================
-    # ATTENDANCE
-    # =====================================================
+    # attendance 
 
     def create_attendance(self):
 
@@ -919,13 +777,18 @@ class AttendanceApp:
             text="Live Attendance",
             style="Title.TLabel"
         ).pack(
-            anchor="w",
+            anchor="center",
             pady=(5, 15)
         )
 
+        camera_frame_title = ttk.Label(
+            page,
+            text="Camera Preview",
+        )
+        camera_frame_title.pack(anchor="center", pady=(10,0))
+
         camera_frame = ttk.LabelFrame(
             page,
-            text="Camera"
         )
 
         camera_frame.pack(
@@ -988,15 +851,22 @@ class AttendanceApp:
             padx=5
         )
 
+        ttk.Button(
+            page,
+            text="Back",
+            command=lambda: self.show_page("Dashboard")
+        ).pack(
+            side="bottom",
+            pady=(0,5)
+        )
+
     def start_attendance_camera(self):
 
         if not self.face_camera.start():
-
             messagebox.showerror(
                 "Camera Error",
                 "Could not open the webcam."
             )
-
             return
 
         self.attendance_running = True
@@ -1011,13 +881,10 @@ class AttendanceApp:
         frame = self.face_camera.read_frame()
 
         if frame is None:
-
             self.stop_attendance_camera()
             return
 
-        # ==============================
-        # ACTUAL FACE RECOGNITION
-        # ==============================
+        # face recognize kore
 
         locations, student_ids = (
             self.face_camera.recognize_faces(
@@ -1028,42 +895,33 @@ class AttendanceApp:
         display_names = []
 
         for student_id in student_ids:
-
             if student_id == "Unknown":
-
                 display_names.append(
                     "Unknown"
                 )
-
                 continue
 
-            # Find student information
+            # student khuija bair koro
             students = get_students()
 
             student_name = None
 
             for db_student_id, name in students:
-
                 if str(db_student_id) == str(student_id):
-
                     student_name = name
                     break
 
             if student_name is None:
-
                 display_names.append(
                     "Unknown"
                 )
-
                 continue
 
             display_names.append(
                 student_name
             )
 
-            # ==============================
-            # MARK ATTENDANCE
-            # ==============================
+            # attendance add maro
 
             from datetime import datetime
 
@@ -1081,8 +939,6 @@ class AttendanceApp:
                 student_id,
                 date
             ):
-
-
                 add_attendance(
                     student_id,
                     student_name,
@@ -1098,7 +954,6 @@ class AttendanceApp:
                 )
 
             else:
-
                 self.status_label.configure(
                     text=(
                         f"Already marked today: "
@@ -1106,9 +961,7 @@ class AttendanceApp:
                     )
                 )
 
-        # ==============================
-        # DRAW RESULTS
-        # ==============================
+        # result bair korilam
 
         frame = self.face_camera.draw_faces(
             frame,
@@ -1118,8 +971,8 @@ class AttendanceApp:
 
         image = self.face_camera.get_tk_image(
             frame,
-            width=640,
-            height=480
+            width=480,
+            height=360
         )
 
         self.attendance_camera_label.configure(
@@ -1147,9 +1000,7 @@ class AttendanceApp:
 
         self.attendance_camera_label.image = None
 
-    # =====================================================
-    # REPORTS
-    # =====================================================
+    # report page
 
     def create_reports(self):
 
@@ -1165,7 +1016,7 @@ class AttendanceApp:
             text="Attendance Reports",
             style="Title.TLabel"
         ).pack(
-            anchor="w",
+            anchor="center",
             pady=(5, 15)
         )
 
@@ -1204,22 +1055,26 @@ class AttendanceApp:
 
         self.attendance_table.column(
             "student_id",
-            width=150
+            width=150,
+            anchor="center"
         )
 
         self.attendance_table.column(
             "name",
-            width=250
+            width=250,
+            anchor="center"
         )
 
         self.attendance_table.column(
             "date",
-            width=150
+            width=150,
+            anchor="center"
         )
 
         self.attendance_table.column(
             "time",
-            width=150
+            width=150,
+            anchor="center"
         )
 
         self.attendance_table.pack(
@@ -1230,10 +1085,21 @@ class AttendanceApp:
         ttk.Button(
             page,
             text="Refresh",
-            command=self.load_attendance
+            command=self.load_students
         ).pack(
-            anchor="e",
+            anchor="center",
             pady=10
+        )
+
+        ttk.Button(
+            page,
+            text="Back",
+            command=lambda:
+            self.show_page("Dashboard")
+        ).pack(
+            side="bottom",
+            padx=5,
+            pady=(0,5)
         )
 
     def load_attendance(self):
@@ -1254,9 +1120,7 @@ class AttendanceApp:
                 values=record
             )
 
-    # =====================================================
-    # CLOSE APPLICATION
-    # =====================================================
+    # application bondho
 
     def close_application(self):
 
@@ -1268,10 +1132,8 @@ class AttendanceApp:
 
         self.root.destroy()
 
-    # =====================================================
-    # RUN
-    # =====================================================
+    # jate chole
 
     def run(self):
-
+        
         self.root.mainloop()

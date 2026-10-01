@@ -6,7 +6,6 @@ from database import (
     add_attendance
 )
 
-
 def mark_attendance(name):
     students = get_students()
 

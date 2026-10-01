@@ -1,13 +1,11 @@
 import sqlite3
 import os
 
-
 DATABASE_DIR = "data"
 DATABASE_FILE = os.path.join(
     DATABASE_DIR,
     "attendance.db"
 )
-
 
 def initialize_database():
     """Create the database and required tables."""
@@ -23,7 +21,7 @@ def initialize_database():
 
     cursor = connection.cursor()
 
-    # Students table
+    # student er table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS students (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +30,7 @@ def initialize_database():
         )
     """)
 
-    # Attendance table
+    # attendance er table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +72,6 @@ def add_student(student_id, name):
 
     finally:
         connection.close()
-
 
 def get_students():
     """Return all registered students."""
@@ -122,7 +119,6 @@ def student_exists(student_id):
 
     return result is not None
 
-
 def add_attendance(student_id, name, date, time):
     """Record attendance."""
 
@@ -143,7 +139,6 @@ def add_attendance(student_id, name, date, time):
 
     connection.commit()
     connection.close()
-
 
 def attendance_exists(student_id, date):
     """Check whether attendance was already recorded today."""
@@ -169,7 +164,6 @@ def attendance_exists(student_id, date):
     connection.close()
 
     return result is not None
-
 
 def get_attendance():
     """Return all attendance records."""
